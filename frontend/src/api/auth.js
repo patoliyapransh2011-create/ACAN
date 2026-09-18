@@ -1,33 +1,27 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://acan-6oi0.onrender.com/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Login
-export const loginUser = (data) =>
-  API.post("/auth/login", data);
+// LOGIN
+export const loginUser = async (email, password) => {
+  const response = await API.post("/auth/login", {
+    email,
+    password,
+  });
 
-// Signup
-export const signupUser = (data) =>
-  API.post("/auth/signup", data);
+  return response.data;
+};
 
-// Forgot Password
-export const forgotPassword = (data) =>
-  API.post("/auth/forgot-password", data);
+// SIGNUP
+export const signupUser = async (userData) => {
+  const response = await API.post("/auth/signup", userData);
 
-// Reset Password
-export const resetPassword = (data) =>
-  API.post("/auth/reset-password", data);
+  return response.data;
+};
 
-// Get Users
-export const getUsers = () =>
-  API.get("/auth/users");
-
-// Update User
-export const updateUser = (id, data) =>
-  API.put(`/auth/users/${id}`, data);
-
-// Delete User
-export const deleteUser = (id) =>
-  API.delete(`/auth/users/${id}`);
+export default API;

@@ -2,103 +2,263 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from ultralytics import YOLO
 import cv2
-import os
-import uuid
+import numpy as np
+
+
+# ==========================================
+# ACAN AI SERVER
+# ==========================================
 
 app = Flask(__name__)
 
-# Enable CORS
+# Allow React frontend
 CORS(app)
 
-UPLOAD_FOLDER = "uploads"
-DETECTION_FOLDER = "detections"
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(DETECTION_FOLDER, exist_ok=True)
+# ==========================================
+# LOAD YOLO MODEL
+# ==========================================
 
-print("Loading YOLOv8 Model...")
+print("====================================")
+print("Loading ACAN YOLOv8 Model...")
+print("====================================")
+
 model = YOLO("yolov8n.pt")
-print("YOLOv8 Loaded Successfully!")
 
+print("YOLOv8 Loaded Successfully!")
+print("AI Server Ready")
+print("====================================")
+
+
+# ==========================================
+# ANIMAL CLASSES
+# ==========================================
+
+ANIMAL_CLASSES = {
+    "bird",
+    "cat",
+    "dog",
+    "horse",
+    "sheep",
+    "cow",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe"
+}
+
+
+# ==========================================
+# MINIMUM CONFIDENCE
+# ==========================================
+
+CONFIDENCE_THRESHOLD = 0.45
+
+
+# ==========================================
+# HOME
+# ==========================================
 
 @app.route("/")
 def home():
+
     return jsonify({
         "app": "ACAN AI Server",
-        "status": "Running"
+        "status": "Running",
+        "model": "YOLOv8",
+        "storage": "Images are NOT stored",
+        "mode": "Memory Detection"
     })
 
+
+# ==========================================
+# AI DETECTION
+# ==========================================
 
 @app.route("/detect", methods=["POST"])
 def detect():
 
+    # --------------------------------------
+    # CHECK IMAGE
+    # --------------------------------------
+
     if "image" not in request.files:
+
         return jsonify({
             "success": False,
-            "message": "No image uploaded"
+            "message": "No camera frame received"
         }), 400
 
-    image = request.files["image"]
 
-    filename = str(uuid.uuid4()) + ".jpg"
-    image_path = os.path.join(UPLOAD_FOLDER, filename)
+    try:
 
-    image.save(image_path)
+        # ----------------------------------
+        # READ IMAGE DIRECTLY INTO MEMORY
+        # ----------------------------------
 
-    results = model(image_path)
+        image_file = request.files["image"]
 
-    frame = cv2.imread(image_path)
+        image_bytes = image_file.read()
 
-    detections = []
 
-    for result in results:
+        # ----------------------------------
+        # CONVERT BYTES → NUMPY
+        # ----------------------------------
 
-        for box in result.boxes:
+        np_array = np.frombuffer(
+            image_bytes,
+            np.uint8
+        )
 
-            cls = int(box.cls[0])
-            confidence = float(box.conf[0])
-            label = model.names[cls]
 
-            x1, y1, x2, y2 = map(int, box.xyxy[0])
+        # ----------------------------------
+        # CONVERT NUMPY → OPENCV IMAGE
+        # ----------------------------------
 
-            cv2.rectangle(
-                frame,
-                (x1, y1),
-                (x2, y2),
-                (0, 255, 0),
-                2
-            )
+        frame = cv2.imdecode(
+            np_array,
+            cv2.IMREAD_COLOR
+        )
 
-            cv2.putText(
-                frame,
-                f"{label} {confidence:.2f}",
-                (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (0, 255, 0),
-                2
-            )
 
-            detections.append({
-                "animal": label,
-                "confidence": round(confidence * 100, 2)
-            })
+        if frame is None:
 
-    output_path = os.path.join(DETECTION_FOLDER, filename)
+            return jsonify({
+                "success": False,
+                "message": "Invalid camera frame"
+            }), 400
 
-    cv2.imwrite(output_path, frame)
 
-    return jsonify({
-        "success": True,
-        "totalDetections": len(detections),
-        "detections": detections,
-        "outputImage": output_path
-    })
+        # ----------------------------------
+        # YOLO DETECTION
+        # ----------------------------------
 
+        results = model(
+            frame,
+            verbose=False,
+            conf=CONFIDENCE_THRESHOLD
+        )
+
+
+        detections = []
+
+
+        # ----------------------------------
+        # PROCESS RESULTS
+        # ----------------------------------
+
+        for result in results:
+
+            for box in result.boxes:
+
+                # Class ID
+                cls = int(
+                    box.cls[0]
+                )
+
+
+                # Confidence
+                confidence = float(
+                    box.conf[0]
+                )
+
+
+                # Object name
+                label = model.names[cls]
+
+
+                # --------------------------------
+                # IGNORE NON-ANIMAL OBJECTS
+                # --------------------------------
+
+                if label not in ANIMAL_CLASSES:
+
+                    continue
+
+
+                # --------------------------------
+                # ADD ANIMAL DETECTION
+                # --------------------------------
+
+                detections.append({
+
+                    "animal": label,
+
+                    "confidence": round(
+                        confidence * 100,
+                        2
+                    )
+
+                })
+
+
+        # ----------------------------------
+        # RESPONSE
+        # ----------------------------------
+
+        return jsonify({
+
+            "success": True,
+
+            "totalDetections": len(
+                detections
+            ),
+
+            "detections": detections
+
+        })
+
+
+    except Exception as error:
+
+        print(
+            "===================================="
+        )
+
+        print(
+            "AI DETECTION ERROR:"
+        )
+
+        print(
+            str(error)
+        )
+
+        print(
+            "===================================="
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message": str(error)
+
+        }), 500
+
+
+# ==========================================
+# START SERVER
+# ==========================================
 
 if __name__ == "__main__":
+
+    print("")
+    print("====================================")
+    print("🚆 ACAN AI SERVER")
+    print("====================================")
+    print("Port : 5001")
+    print("Storage : DISABLED")
+    print("Detection : MEMORY ONLY")
+    print("====================================")
+    print("")
+
     app.run(
+
         host="0.0.0.0",
+
         port=5001,
+
         debug=True
+
     )
