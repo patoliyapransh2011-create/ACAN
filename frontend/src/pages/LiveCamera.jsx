@@ -40,7 +40,7 @@ function LiveCamera() {
   const loadCameras = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/dashboard/camera"
+        "https://acan-6oi0.onrender.com/api/dashboard/camera"
       );
 
       setCameras(res.data.cameras || []);

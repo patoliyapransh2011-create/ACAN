@@ -23,7 +23,7 @@ function EditUser() {
   const loadUser = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/auth/users"
+        "https://acan-6oi0.onrender.com/api/auth/users"
       );
 
       const user = res.data.users.find((u) => u._id === id);
@@ -46,7 +46,7 @@ function EditUser() {
   const update = async () => {
     try {
       await axios.put(
-        `http://localhost:5000/api/auth/users/${id}`,
+        `https://acan-6oi0.onrender.com/api/auth/users/${id}`,
         form
       );
 

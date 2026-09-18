@@ -21,7 +21,7 @@ function CameraManagement() {
   const loadCameras = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/cameras"
+        "https://acan-6oi0.onrender.com/api/cameras"
       );
 
       setCameras(res.data.cameras);
@@ -40,7 +40,7 @@ function CameraManagement() {
   const addCamera = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/cameras",
+        "https://acan-6oi0.onrender.com/api/cameras",
         form
       );
 
@@ -64,7 +64,7 @@ function CameraManagement() {
     if (!window.confirm("Delete this camera?")) return;
 
     await axios.delete(
-      `http://localhost:5000/api/cameras/${id}`
+      `https://acan-6oi0.onrender.com/api/cameras/${id}`
     );
 
     loadCameras();

@@ -26,7 +26,7 @@ function AddUser() {
   const save = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/auth/signup",
+        "https://acan-6oi0.onrender.com/api/auth/signup",
         form
       );
 

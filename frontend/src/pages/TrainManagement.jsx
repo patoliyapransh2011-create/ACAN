@@ -20,7 +20,7 @@ function TrainManagement() {
   const loadTrains = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/trains"
+        "https://acan-6oi0.onrender.com/api/trains"
       );
 
       setTrains(res.data.trains);
@@ -39,7 +39,7 @@ function TrainManagement() {
   const addTrain = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/trains",
+        "https://acan-6oi0.onrender.com/api/trains",
         form
       );
 
@@ -62,7 +62,7 @@ function TrainManagement() {
     if (!window.confirm("Delete this train?")) return;
 
     await axios.delete(
-      `http://localhost:5000/api/trains/${id}`
+      `https://acan-6oi0.onrender.com/api/trains/${id}`
     );
 
     loadTrains();

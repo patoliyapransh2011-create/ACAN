@@ -22,7 +22,7 @@ function Dashboard() {
   const loadDashboard = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/dashboard"
+        "https://acan-6oi0.onrender.com/api/dashboard"
       );
 
       setDashboard(res.data.dashboard);
