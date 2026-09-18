@@ -7,6 +7,7 @@ function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const login = async () => {
     if (!email || !password) {
@@ -15,17 +16,22 @@ function Login() {
     }
 
     try {
-      const res = await loginUser({
-        email,
-        password,
-      });
+      setLoading(true);
 
-      // Save Login
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      const res = await loginUser(email, password);
 
-      // Redirect according to role
-      switch (res.data.user.role) {
+      console.log("LOGIN RESPONSE:", res);
+
+      const data = res.data || res;
+
+      if (!data.token || !data.user) {
+        throw new Error("Invalid login response from server");
+      }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      switch (data.user.role) {
         case "superadmin":
           navigate("/super-admin");
           break;
@@ -47,26 +53,36 @@ function Login() {
           break;
 
         default:
-          navigate("/login");
+          navigate("/");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Login Failed");
+      console.error("LOGIN ERROR:", err);
+
+      alert(
+        err.response?.data?.message ||
+        err.message ||
+        "Login Failed"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div
       style={{
-        height: "100vh",
+        minHeight: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
         background: "#0f172a",
+        padding: "20px",
       }}
     >
       <div
         style={{
           width: "380px",
+          maxWidth: "100%",
           background: "#1e293b",
           padding: "30px",
           borderRadius: "12px",
@@ -90,6 +106,7 @@ function Login() {
           onChange={(e) => setEmail(e.target.value)}
           style={{
             width: "100%",
+            boxSizing: "border-box",
             padding: "12px",
             marginBottom: "15px",
           }}
@@ -100,8 +117,14 @@ function Login() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              login();
+            }
+          }}
           style={{
             width: "100%",
+            boxSizing: "border-box",
             padding: "12px",
             marginBottom: "20px",
           }}
@@ -109,25 +132,27 @@ function Login() {
 
         <button
           onClick={login}
+          disabled={loading}
           style={{
             width: "100%",
             padding: "12px",
-            background: "#22c55e",
+            background: loading ? "#166534" : "#22c55e",
             color: "#fff",
             border: "none",
             borderRadius: "5px",
-            cursor: "pointer",
+            cursor: loading ? "not-allowed" : "pointer",
             fontSize: "16px",
             fontWeight: "bold",
           }}
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
 
         <br />
         <br />
 
         <button
+          onClick={() => navigate("/forgot-password")}
           style={{
             width: "100%",
             padding: "10px",
